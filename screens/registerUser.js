@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Image, StyleSheet, TouchableOpacity, View, KeyboardAvoidingView, Platform, ScrollView } from "react-native";
 import { Button, DefaultTheme, Dialog, Divider, PaperProvider, Portal, Text, TextInput } from "react-native-paper";
-import { signInWithEmailAndPassword, sendPasswordResetEmail} from "firebase/auth";
+import { createUserWithEmailAndPassword, updateProfile} from "firebase/auth";
 import { auth } from '../firebase-sdk';
+import { useNavigation } from "@react-navigation/native";
 
 const theme = {
   ...DefaultTheme,
@@ -18,7 +19,51 @@ export default function RegisterUserScreen(){
     const [firstPassword, setFirstPassword] = useState('');
     const [secondPassword, setSecondPassword] = useState('');
     const [visibilityPassword, setVisibilityPassword] = useState(false);
+    const [errorMessage, setErrorMessage] = useState('')
+    const [successMessage, setSuccessMessage] = useState('')
+    const navigation = useNavigation()
 
+    useEffect(() => {
+        if (successMessage !== ''){
+            const timeout = setTimeout(() => {
+                            navigation.navigate('Login')
+                        }, 1200)
+            return () => clearTimeout(timeout)               
+        }
+    })
+
+    async function handleRegistrationUser(){
+        if (firstPassword !== secondPassword){
+            setErrorMessage('As senhas não são iguais.')
+            return
+        }
+
+        try{
+            const credential = await createUserWithEmailAndPassword(auth, email, firstPassword)
+            const user = credential.user
+            await updateProfile(user, {displayName:name})
+            setErrorMessage('')
+            setSuccessMessage('Usuário cadastrado com sucesso!')
+        }catch (error){
+            switch (error.code){
+                case 'auth/email-already-in-use':
+                    setErrorMessage('E-mail já está em uso.')
+                    break
+                case 'auth/invalid-email':
+                    setErrorMessage('E-mail inválido.')
+                    break
+                case 'auth/missing-email':
+                    setErrorMessage('Preencher o campo de e-mail.')
+                    break
+                case 'auth/weak-password':
+                    setErrorMessage('Senha fraca, tem que possuir pelo menos 6 dígitos.')
+                    break
+                default:
+                    setErrorMessage('Erro na aplicação.')
+            }
+        }
+
+    }
 
     return (
         <PaperProvider theme={theme}>
@@ -58,12 +103,6 @@ export default function RegisterUserScreen(){
                         secureTextEntry={!visibilityPassword}
                         returnKeyType="done"
                         onSubmitEditing={[]}
-                        right={
-                            <TextInput.Icon 
-                                icon={visibilityPassword ? "eye" : "eye-off"}
-                                onPress={() => setVisibilityPassword(!visibilityPassword)}
-                            />
-                        }
                     />
 
                     <TextInput 
@@ -75,15 +114,23 @@ export default function RegisterUserScreen(){
                         secureTextEntry={!visibilityPassword}
                         returnKeyType="done"
                         onSubmitEditing={[]}
-                        right={
-                            <TextInput.Icon 
-                                icon={visibilityPassword ? "eye" : "eye-off"}
-                                onPress={() => setVisibilityPassword(!visibilityPassword)}
-                            />
-                        }
                     />
+
+                    {errorMessage !== '' && (
+                        <Text style={{color:'red'}}>{errorMessage}</Text>
+                    )}
+
+                    {successMessage !== '' && (
+                        <Text style={{color:'green'}}>{successMessage}</Text>
+                    )}
                     
-                    <Text>Registro</Text>
+                    <Button
+                    mode="contained"
+                    onPress={handleRegistrationUser}
+                    contentStyle={{height:48}}
+                    >
+                        Cadastrar
+                    </Button>
                 </ScrollView>
             </KeyboardAvoidingView>
         </PaperProvider>
