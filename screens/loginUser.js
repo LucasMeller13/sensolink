@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { Image, StyleSheet, TouchableOpacity, View } from "react-native";
 import { Button, DefaultTheme, Divider, PaperProvider, Text, TextInput } from "react-native-paper";
+import { signInWithEmailAndPassword } from "firebase/auth";
+import { auth } from '../firebase-sdk';
 
 const theme = {
   ...DefaultTheme,
@@ -10,17 +12,27 @@ const theme = {
   },
 };
 
+
 export default function LoginScreen(){
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [visibilityPassword, setVisibilityPassword] = useState(false);
-
-    const handleDefaultLogin = () => {
-
-    }
+    const [error, setError] = useState('')
 
     const handleGoogleLogin = () => {
 
+    }
+
+    async function handleDefaultLogin(email, senha){
+        try{
+            const userCredential = await signInWithEmailAndPassword(auth, email, senha)
+            setError('')
+            const user = userCredential.user
+            console.log('salve ', user)
+        }catch (error){
+            setError('erro')
+            console.log('Erro ao fazer login:', error.code, error.message);
+        }
     }
 
     return (
@@ -42,6 +54,7 @@ export default function LoginScreen(){
                     value={password}
                     onChangeText={setPassword}
                     mode="outlined"
+                    autoCapitalize="none"
                     secureTextEntry={!visibilityPassword}
                     right={
                         <TextInput.Icon 
@@ -51,13 +64,17 @@ export default function LoginScreen(){
                     }
                 />
 
+                {error !== '' && (
+                    <Text style={{color: 'red', marginVertical: 8}}>{error}</Text>
+                    )}
+
                 <TouchableOpacity>
                     <Text>Esqueceu a senha?</Text>
                 </TouchableOpacity>
 
                 <Button
                     mode="contained"
-                    onPress={handleDefaultLogin}
+                    onPress={() => handleDefaultLogin(email, password)}
                     contentStyle={{height:48}}
                 >
                     Continuar
