@@ -3,6 +3,7 @@ import { Image, StyleSheet, TouchableOpacity, View } from "react-native";
 import { Button, DefaultTheme, Dialog, Divider, PaperProvider, Portal, Text, TextInput } from "react-native-paper";
 import { signInWithEmailAndPassword, sendPasswordResetEmail} from "firebase/auth";
 import { auth } from '../firebase-sdk';
+import { useNavigation } from "@react-navigation/native";
 
 const theme = {
   ...DefaultTheme,
@@ -22,6 +23,7 @@ export default function LoginScreen(){
     const [forgotEmail, setForgotEmail] = useState('')
     const [forgotMessage, setForgotMessage] = useState('')
     const [forgotError, setForgotError] = useState('')
+    const navigation = useNavigation()
 
     const handleGoogleLogin = () => {
 
@@ -29,10 +31,9 @@ export default function LoginScreen(){
 
     async function handleDefaultLogin(){
         try{
-            const userCredential = await signInWithEmailAndPassword(auth, email, password)
+            await signInWithEmailAndPassword(auth, email, password)
             setError('')
             console.log('logou')
-            const user = userCredential.user
         }catch (error){
             switch(error.code){
                 case 'auth/user-not-found':
@@ -153,7 +154,7 @@ export default function LoginScreen(){
                 <View>
                     <Text>Não tem conta?</Text>
                     <TouchableOpacity>
-                        <Text>Cadastrar</Text>
+                        <Text onPress={() => navigation.navigate('RegisterUser')}>Cadastrar</Text>
                     </TouchableOpacity>
                 </View>
 
