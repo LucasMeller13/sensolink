@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
 import { Image, StyleSheet, TouchableOpacity, View, KeyboardAvoidingView, Platform, ScrollView } from "react-native";
-import { Button, DefaultTheme, Dialog, Divider, PaperProvider, Portal, Text, TextInput } from "react-native-paper";
+import { Button, DefaultTheme, Dialog, Divider, PaperProvider, Portal, Snackbar, Text, TextInput } from "react-native-paper";
 import { createUserWithEmailAndPassword, updateProfile} from "firebase/auth";
 import { auth } from '../firebase-sdk';
 import { useNavigation } from "@react-navigation/native";
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
 const theme = {
   ...DefaultTheme,
@@ -20,14 +21,14 @@ export default function RegisterUserScreen(){
     const [secondPassword, setSecondPassword] = useState('');
     const [visibilityPassword, setVisibilityPassword] = useState(false);
     const [errorMessage, setErrorMessage] = useState('')
-    const [successMessage, setSuccessMessage] = useState('')
+    const [snackbarVisible, setSnackbarVisible] = useState(false)
     const navigation = useNavigation()
 
     useEffect(() => {
-        if (successMessage !== ''){
+        if (snackbarVisible){
             const timeout = setTimeout(() => {
                             navigation.navigate('Login')
-                        }, 1200)
+                        }, 3000)
             return () => clearTimeout(timeout)               
         }
     })
@@ -43,7 +44,7 @@ export default function RegisterUserScreen(){
             const user = credential.user
             await updateProfile(user, {displayName:name})
             setErrorMessage('')
-            setSuccessMessage('Usuário cadastrado com sucesso!')
+            setSnackbarVisible(true)
         }catch (error){
             switch (error.code){
                 case 'auth/email-already-in-use':
@@ -102,7 +103,6 @@ export default function RegisterUserScreen(){
                         autoCapitalize="none"
                         secureTextEntry={!visibilityPassword}
                         returnKeyType="done"
-                        onSubmitEditing={[]}
                     />
 
                     <TextInput 
@@ -113,16 +113,26 @@ export default function RegisterUserScreen(){
                         autoCapitalize="none"
                         secureTextEntry={!visibilityPassword}
                         returnKeyType="done"
-                        onSubmitEditing={[]}
+                        onSubmitEditing={handleRegistrationUser}
                     />
 
                     {errorMessage !== '' && (
                         <Text style={{color:'red'}}>{errorMessage}</Text>
                     )}
 
-                    {successMessage !== '' && (
-                        <Text style={{color:'green'}}>{successMessage}</Text>
-                    )}
+                    {/* <Portal>
+                        <Snackbar
+                            visible={snackbarVisible}
+                            onDismiss={() => setSnackbarVisible(false)}
+                            duration={2000}
+                            style={{ backgroundColor: '#E7F9ED', borderRadius: 12 }}
+                        >
+                            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                <MaterialIcons name="check-circle" size={22} color="#33cc66" style={{ marginRight: 8 }} />
+                                <Text style={{ color: "#219653" }}>Usuário cadastrado com sucesso!</Text>
+                            </View>
+                        </Snackbar>
+                    </Portal> */}
                     
                     <Button
                     mode="contained"

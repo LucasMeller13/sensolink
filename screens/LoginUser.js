@@ -45,6 +45,9 @@ export default function LoginScreen(){
                 case 'auth/invalid-credential':
                     setError('Senha incorreta.')
                     break;
+                case 'auth/missing-password':
+                    setError('Digite a senha.')
+                    break;
                 default:
                     console.log(error.code)
                     setError('Erro na autenticação.')
@@ -86,6 +89,8 @@ export default function LoginScreen(){
                     mode="outlined"
                     autoCapitalize="none"
                     keyboardType="email-address"
+                    returnKeyType="done"
+                    onSubmitEditing={handleDefaultLogin}
                 />
 
                 <TextInput 
