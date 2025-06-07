@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
-import { Image, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, TouchableOpacity, View } from "react-native";
+import { Image, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, TouchableOpacity, View, Keyboard } from "react-native";
 import { Button, Chip, DefaultTheme, Dialog, Divider, PaperProvider, Portal, Snackbar, Text, TextInput } from "react-native-paper";
 import { getAuth} from "firebase/auth";
 import { auth, db } from '../firebase-sdk';
 import { useNavigation } from "@react-navigation/native";
-import { doc, updateDoc, addDoc, collection } from "firebase/firestore";
+import { doc, updateDoc, addDoc, collection, deleteDoc } from "firebase/firestore";
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useRoute } from '@react-navigation/native';
 
@@ -19,6 +19,7 @@ const theme = {
 export default function ManageSensorView(){
     const route = useRoute();
     const { sensor } = route.params || {};
+    const navigation = useNavigation();
 
     const [arrayOutputValues, setArrayOutputValues] = useState([])
     const [name, setName] = useState('')
@@ -37,6 +38,18 @@ export default function ManageSensorView(){
         }
     }, [sensor]);
 
+    useEffect(() => {
+    if (snackbarVisible) {
+        const timeout = setTimeout(() => {
+            if (navigation.canGoBack()) {
+                navigation.goBack();
+            }
+        }, 1500); // o mesmo tempo do Snackbar
+
+        return () => clearTimeout(timeout);
+    }
+}, [snackbarVisible, navigation]);
+
     const auth_user = getAuth()
 
     function addOutputValues(value){
@@ -49,6 +62,19 @@ export default function ManageSensorView(){
 
     function removeOutputValues(value){
         setArrayOutputValues(arrayOutputValues.filter(item => item !== value))
+    }
+
+    async function handleDeleteSensor() {
+        if (!sensor || !sensor.id) return;
+        try {
+            await deleteDoc(doc(collection(db, 'sensors'), sensor.id));
+            setSnackbarVisible(true);
+            setError('');
+            if (navigation.canGoBack()) navigation.goBack();
+        } catch (error) {
+            setError(error.message || String(error));
+            setSnackbarVisible(true);
+        }
     }
 
     async function handleSensorRegistration(){
@@ -108,6 +134,7 @@ export default function ManageSensorView(){
                         mode="outlined"
                         value={name}
                         onChangeText={setName}
+                        disabled={snackbarVisible}
                     />
 
                     <TextInput 
@@ -115,6 +142,7 @@ export default function ManageSensorView(){
                         mode="outlined"
                         value={description}
                         onChangeText={setDescription}
+                        disabled={snackbarVisible}
                     />
 
                     <TextInput 
@@ -124,6 +152,7 @@ export default function ManageSensorView(){
                         keyboardType="numeric"
                         value={frequency}
                         onChangeText={setFrequency}
+                        disabled={snackbarVisible}
                     />
 
                     <TextInput 
@@ -135,6 +164,7 @@ export default function ManageSensorView(){
                         right={<TextInput.Icon icon="plus" onPress={() => addOutputValues(outputValue)} />}
                         returnKeyType="done"
                         onSubmitEditing={() => addOutputValues(outputValue)}
+                        disabled={snackbarVisible}
                     />
                     <View style={{ flexDirection: 'row', flexWrap: 'wrap' , marginBottom: 10}}>
                         {arrayOutputValues.map(item => (
@@ -143,6 +173,7 @@ export default function ManageSensorView(){
                                 mode="flat"
                                 onClose={() => removeOutputValues(item)}
                                 style={{margin:5, marginTop:7 ,padding:2}}
+                                disabled={snackbarVisible}
                             >
                                 {item}
                             </Chip>
@@ -162,18 +193,38 @@ export default function ManageSensorView(){
                         >
                             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                                 <MaterialIcons name="check-circle" size={22} color="#33cc66" style={{ marginRight: 8 }} />
-                                <Text style={{ color: "#219653" }}>Sensor cadastrado com sucesso!</Text>
+                                <Text style={{ color: "#219653" }}>Sensor {sensor? "atualizado" : "cadastrado"} com sucesso!</Text>
                             </View>
                         </Snackbar>
                     </Portal>
                     
-                    <Button
-                        mode="contained"
-                        onPress={() => handleSensorRegistration()}
-                        contentStyle={{height:48}}
-                    >
-                        Salvar
-                    </Button>
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 16 }}>
+                        {sensor && sensor.id && (
+                            <Button
+                                mode="contained"
+                                onPress={handleDeleteSensor}
+                                buttonColor="#FF575A"
+                                textColor="#fff"
+                                style={{ flex: 1, marginRight: 8 }}
+                                contentStyle={{ height: 48 }}
+                                disabled={snackbarVisible}
+                            >
+                                Deletar
+                            </Button>
+                        )}
+
+                        <Button
+                            mode="contained"
+                            onPress={() => {
+                                Keyboard.dismiss();
+                                handleSensorRegistration();}}
+                            contentStyle={{ height: 48 }}
+                            style={{ flex: 2 }}
+                            disabled={snackbarVisible}
+                        >
+                            Salvar
+                        </Button>
+                    </View>
 
 
                 </ScrollView>
