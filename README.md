@@ -1,0 +1,1 @@
+Para rodar o projeto, primeiro execute ```npm install``` para instalar as dependências e, em seguida, rode ```npx expo start``` para iniciar a aplicação.
