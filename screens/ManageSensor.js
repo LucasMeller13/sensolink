@@ -4,9 +4,9 @@ import { Button, Chip, DefaultTheme, Dialog, Divider, PaperProvider, Portal, Sna
 import { getAuth} from "firebase/auth";
 import { auth, db } from '../firebase-sdk';
 import { useNavigation } from "@react-navigation/native";
-import { addDoc, collection } from "firebase/firestore";
+import { doc, updateDoc, addDoc, collection } from "firebase/firestore";
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-
+import { useRoute } from '@react-navigation/native';
 
 const theme = {
   ...DefaultTheme,
@@ -17,6 +17,9 @@ const theme = {
 };
 
 export default function ManageSensorView(){
+    const route = useRoute();
+    const { sensor } = route.params || {};
+
     const [arrayOutputValues, setArrayOutputValues] = useState([])
     const [name, setName] = useState('')
     const [description, setDescription] = useState('')
@@ -24,6 +27,15 @@ export default function ManageSensorView(){
     const [outputValue, setOutputValue] = useState('')
     const [error, setError] = useState('')
     const [snackbarVisible, setSnackbarVisible] = useState(false)
+
+    useEffect(() => {
+        if (sensor) {
+        setName(sensor.name || '');
+        setDescription(sensor.description || '');
+        setFrequency(sensor.frequency || '');
+        setArrayOutputValues(sensor.output_values || []);
+        }
+    }, [sensor]);
 
     const auth_user = getAuth()
 
@@ -45,9 +57,12 @@ export default function ManageSensorView(){
             description: description,
             frequency: frequency,
             output_values: arrayOutputValues,
-            created_at: new Date,
-            updated_at: new Date,
             user_id: auth_user.currentUser.uid
+        }
+
+        if (!sensor) {
+            dados.created_at = new Date();
+            dados.updated_at = new Date();
         }
 
         if (name === ''){
@@ -61,12 +76,19 @@ export default function ManageSensorView(){
             return
         }
 
-        try{
-            await addDoc(collection(db,'sensors'),dados)
-            setError('')
-            setSnackbarVisible(true)
-        }catch (error){
-            setError(error)
+        try {
+            if (sensor && sensor.id) {
+                await updateDoc(doc(collection(db, 'sensors'), sensor.id), dados);
+                setError('');
+                setSnackbarVisible(true);
+            } else {
+                await addDoc(collection(db, 'sensors'), dados);
+                setError('');
+                setSnackbarVisible(true);
+            }
+        } catch (error) {
+            setError(error.message || String(error));
+            setSnackbarVisible(true);
         }
     }
 
