@@ -9,6 +9,7 @@ import { auth } from './firebase-sdk';
 import { useEffect, useState } from 'react';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import AntDesign from '@expo/vector-icons/AntDesign';
+import Feather from '@expo/vector-icons/Feather';
 import DashboardView from './screens/Dashboards';
 import UserInfoView from './screens/UserInfo';
 import { Button } from 'react-native-paper';
@@ -20,7 +21,6 @@ const Stack = createNativeStackNavigator();
 
 
 function AppTabs(){
-
   async function handleSignOut() {
     try{
       await signOut(auth)
@@ -37,13 +37,6 @@ function AppTabs(){
       }} 
       name='SensorView' 
       component={SensorView}/>
-
-      <BottomTab.Screen 
-      options={{
-        tabBarIcon:() => (<MaterialIcons name="sensors" size={24} color="#648DDB" />),
-      }} 
-      name='ManageSensorView' 
-      component={ManageSensorView}/>
 
       <BottomTab.Screen 
       options={{
@@ -78,6 +71,23 @@ function AuthTabs() {
   );
 }
 
+function AppStack() {
+  return (
+    <Stack.Navigator>
+      <Stack.Screen 
+        name="MainTabs" 
+        component={AppTabs} 
+        options={{ headerShown: false }} 
+      />
+      <Stack.Screen 
+        name="ManageSensorView" 
+        component={ManageSensorView} 
+        options={{ title: "Manage Sensors" }} 
+      />
+    </Stack.Navigator>
+  );
+}
+
 
 export default function App(){
   const [user, setUser] = useState(null)
@@ -92,7 +102,7 @@ export default function App(){
   
   return(
     <NavigationContainer>
-      {user ? <AppTabs/> : <AuthTabs />}
+      {user ? <AppStack/> : <AuthTabs />}
     </NavigationContainer>
   )
 }
