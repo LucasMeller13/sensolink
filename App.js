@@ -15,6 +15,7 @@ import UserInfoView from "./screens/UserInfo";
 import { Button } from "react-native-paper";
 import { TouchableOpacity } from "react-native";
 import ManageSensorView from "./screens/ManageSensor";
+import ManageDashboardView from "./screens/ManageDashboard";
 
 const BottomTab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -96,6 +97,11 @@ function AppStack() {
         name="ManageSensorView"
         component={ManageSensorView}
         options={{ title: "Manage Sensors" }}
+      />
+      <Stack.Screen
+        name="ManageDashboardView"
+        component={ManageDashboardView}
+        options={{ title: "Manage Dashboards" }}
       />
     </Stack.Navigator>
   );

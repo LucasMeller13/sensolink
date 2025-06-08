@@ -201,6 +201,16 @@ export default function SensorView() {
               </Text>
 
               <Text style={styles.lastData}>
+                Criado em:{" "}
+                {sensor.created_at
+                  ? new Date(sensor.created_at.seconds * 1000).toLocaleString(
+                      "pt-BR",
+                      { hour12: false }
+                    )
+                  : "--"}
+              </Text>
+
+              <Text style={styles.lastData}>
                 Última atualização:{" "}
                 {sensor.updated_at
                   ? new Date(sensor.updated_at.seconds * 1000).toLocaleString(
