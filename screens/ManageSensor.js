@@ -7,6 +7,7 @@ import { useNavigation } from "@react-navigation/native";
 import { doc, updateDoc, addDoc, collection, deleteDoc } from "firebase/firestore";
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useRoute } from '@react-navigation/native';
+import * as Clipboard from 'expo-clipboard';
 
 const theme = {
   ...DefaultTheme,
@@ -28,6 +29,9 @@ export default function ManageSensorView(){
     const [outputValue, setOutputValue] = useState('')
     const [error, setError] = useState('')
     const [snackbarVisible, setSnackbarVisible] = useState(false)
+    const [showConfirmSave, setShowConfirmSave] = useState(false)
+    const [showConfirmDelete, setShowConfirmDelete] = useState(false)
+
 
     useEffect(() => {
         if (sensor) {
@@ -91,14 +95,20 @@ export default function ManageSensorView(){
             dados.updated_at = new Date();
         }
 
-        if (name === ''){
+        if (name === '') {
             setError('Preencha o campo de nome.')
             return
-        }else if (frequency === ''){
+        } else if (frequency === '') {
             setError('Preencha o campo de frequência.')
             return
-        } else if (arrayOutputValues.length == 0){
+        } else if (isNaN(Number(frequency)) || Number(frequency) <= 0) {
+            setError('O campo frequência deve ser um número maior que zero.')
+            return
+        } else if (arrayOutputValues.length == 0) {
             setError('Preencha pelo menos um nome do dado.')
+            return
+        } else if (description.length > 150) {
+            setError('Descrição maior que 150 caracteres.')
             return
         }
 
@@ -143,7 +153,24 @@ export default function ManageSensorView(){
                         value={description}
                         onChangeText={setDescription}
                         disabled={snackbarVisible}
+                        multiline={true}
                     />
+
+                    {sensor && sensor.id && (
+                        <TextInput
+                            label="ID do sensor"
+                            mode="outlined"
+                            value={sensor.id}
+                            editable={false}
+                            disabled={false} 
+                            right={
+                            <TextInput.Icon 
+                                icon="content-copy"
+                                onPress={() => Clipboard.setStringAsync(sensor.id)}
+                            />
+                            }
+                        />
+                        )}
 
                     <TextInput 
                         label='Frequência dos dados (em segundos)'
@@ -196,13 +223,55 @@ export default function ManageSensorView(){
                                 <Text style={{ color: "#219653" }}>Sensor {sensor? "atualizado" : "cadastrado"} com sucesso!</Text>
                             </View>
                         </Snackbar>
+
+                        <Dialog
+                            visible={showConfirmSave}
+                            onDismiss={() => setShowConfirmSave(false)}
+                        >
+                            <Dialog.Title>Confirmar Salvar</Dialog.Title>
+                            <Dialog.Content>
+                                <Text>Tem certeza que deseja {sensor? "salvar as alterações" : "cadastrar o sensor"}?</Text>
+                            </Dialog.Content>
+                            <Dialog.Actions>
+                                <Button onPress={() => setShowConfirmSave(false)}>Cancelar</Button>
+                                <Button
+                                    onPress={async () => {
+                                    setShowConfirmSave(false);
+                                    await handleSensorRegistration();
+                                    }}
+                                >Confirmar</Button>
+                            </Dialog.Actions>
+                        </Dialog>
+
+                        <Dialog
+                            visible={showConfirmDelete}
+                            onDismiss={() => setShowConfirmDelete(false)}
+                        >
+                            <Dialog.Title>Confirmar Exclusão</Dialog.Title>
+                            <Dialog.Content>
+                                <Text>Tem certeza que deseja excluir este sensor?</Text>
+                            </Dialog.Content>
+                            <Dialog.Actions>
+                                <Button onPress={() => setShowConfirmDelete(false)}>Cancelar</Button>
+                                <Button
+                                    onPress={async () => {
+                                    setShowConfirmDelete(false);
+                                    await handleDeleteSensor();
+                                    }}
+                                    textColor="#FF575A"
+                                >Deletar</Button>
+                            </Dialog.Actions>
+                        </Dialog>
                     </Portal>
                     
                     <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 16 }}>
                         {sensor && sensor.id && (
                             <Button
                                 mode="contained"
-                                onPress={handleDeleteSensor}
+                                onPress={() => {
+                                    Keyboard.dismiss();
+                                    setShowConfirmDelete(true);
+                                }}
                                 buttonColor="#FF575A"
                                 textColor="#fff"
                                 style={{ flex: 1, marginRight: 8 }}
@@ -217,7 +286,7 @@ export default function ManageSensorView(){
                             mode="contained"
                             onPress={() => {
                                 Keyboard.dismiss();
-                                handleSensorRegistration();}}
+                                setShowConfirmSave(true);}}
                             contentStyle={{ height: 48 }}
                             style={{ flex: 2 }}
                             disabled={snackbarVisible}

@@ -21,7 +21,10 @@
     "react": "19.0.0",
     "react-native": "0.79.2",
     "react-native-paper": "^5.14.5",
-    "react-native-safe-area-context": "^5.4.0"
+    "react-native-safe-area-context": "^5.4.0",
+    "expo-file-system": "~18.1.10",
+    "expo-sharing": "~13.1.5",
+    "expo-clipboard": "~7.1.4"
   },
   "devDependencies": {
     "@babel/core": "^7.20.0"
