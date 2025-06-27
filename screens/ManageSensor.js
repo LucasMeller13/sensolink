@@ -21,6 +21,7 @@ import {
   Text,
   TextInput,
 } from "react-native-paper";
+import * as ImagePicker from "expo-image-picker";
 import { getAuth } from "firebase/auth";
 import { auth, db } from "../firebase-sdk";
 import { useNavigation } from "@react-navigation/native";
@@ -57,7 +58,8 @@ export default function ManageSensorView() {
   const [snackbarVisible, setSnackbarVisible] = useState(false);
   const [showConfirmSave, setShowConfirmSave] = useState(false);
   const [showConfirmDelete, setShowConfirmDelete] = useState(false);
-
+  const [imageUri, setImageUri] = useState(null);
+  
   useEffect(() => {
     if (sensor) {
       setName(sensor.name || "");
@@ -153,174 +155,133 @@ export default function ManageSensorView() {
     }
   }
 
+  async function handlePickImage() {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== "granted") {
+      alert("Permissão para acessar a galeria é necessária!");
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      quality: 0.8,
+    });
+
+    if (!result.canceled && result.assets && result.assets.length > 0) {
+      setImageUri(result.assets[0].uri);
+    }
+  }
+
   return (
     <PaperProvider theme={theme}>
       <KeyboardAvoidingView
         style={{ flex: 1 }}
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
+        behavior={Platform.OS === "ios" ? "padding" : "undefined"}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 64 : 0}
       >
-        <ScrollView
-          contentContainerStyle={styles.container}
-          keyboardShouldPersistTaps="handled"
-        >
-          <TextInput
-            label="Nome do sensor"
-            mode="outlined"
-            value={name}
-            onChangeText={setName}
-            disabled={snackbarVisible}
-          />
+        <View style={{ flex: 1 }}>
+          <ScrollView
+            contentContainerStyle={styles.container}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+          >
+            <TouchableOpacity
+              onPress={handlePickImage}
+              style={styles.imageContainer}
+            >
+              <Image
+                source={
+                  imageUri
+                    ? { uri: imageUri }
+                    : require("../assets/camera-icon.png")
+                }
+                style={[
+                  styles.circularImage,
+                  !imageUri && styles.placeholderImage,
+                ]}
+              />
+            </TouchableOpacity>
 
-          <TextInput
-            label="Descrição ou informações adicionais"
-            mode="outlined"
-            value={description}
-            onChangeText={setDescription}
-            disabled={snackbarVisible}
-            multiline={true}
-          />
-
-          {sensor && sensor.id && (
             <TextInput
-              label="ID do sensor"
+              label="Nome do sensor"
               mode="outlined"
-              value={sensor.id}
-              editable={false}
+              value={name}
+              onChangeText={setName}
               disabled={snackbarVisible}
+            />
+
+            <TextInput
+              label="Descrição ou informações adicionais"
+              mode="outlined"
+              value={description}
+              onChangeText={setDescription}
+              disabled={snackbarVisible}
+              multiline={true}
+            />
+
+            {sensor && sensor.id && (
+              <TextInput
+                label="ID do sensor"
+                mode="outlined"
+                value={sensor.id}
+                editable={false}
+                disabled={snackbarVisible}
+                right={
+                  <TextInput.Icon
+                    icon="content-copy"
+                    onPress={() => Clipboard.setStringAsync(sensor.id)}
+                  />
+                }
+              />
+            )}
+
+            <TextInput
+              label="Frequência dos dados (em segundos)"
+              mode="outlined"
+              autoCapitalize="none"
+              keyboardType="numeric"
+              value={frequency}
+              onChangeText={setFrequency}
+              disabled={snackbarVisible}
+            />
+
+            <TextInput
+              label="Nome do dado (e.g, temperatura, humidade)"
+              value={outputValue}
+              onChangeText={setOutputValue}
+              mode="outlined"
+              autoCapitalize="none"
               right={
                 <TextInput.Icon
-                  icon="content-copy"
-                  onPress={() => Clipboard.setStringAsync(sensor.id)}
+                  icon="plus"
+                  onPress={() => addOutputValues(outputValue)}
                 />
               }
+              returnKeyType="done"
+              onSubmitEditing={() => addOutputValues(outputValue)}
+              disabled={snackbarVisible}
             />
-          )}
 
-          <TextInput
-            label="Frequência dos dados (em segundos)"
-            mode="outlined"
-            autoCapitalize="none"
-            keyboardType="numeric"
-            value={frequency}
-            onChangeText={setFrequency}
-            disabled={snackbarVisible}
-          />
-
-          <TextInput
-            label="Nome do dado (e.g, temperatura, humidade)"
-            value={outputValue}
-            onChangeText={setOutputValue}
-            mode="outlined"
-            autoCapitalize="none"
-            right={
-              <TextInput.Icon
-                icon="plus"
-                onPress={() => addOutputValues(outputValue)}
-              />
-            }
-            returnKeyType="done"
-            onSubmitEditing={() => addOutputValues(outputValue)}
-            disabled={snackbarVisible}
-          />
-          <View
-            style={{ flexDirection: "row", flexWrap: "wrap", marginBottom: 10 }}
-          >
-            {arrayOutputValues.map((item) => (
-              <Chip
-                key={item}
-                mode="flat"
-                onClose={() => removeOutputValues(item)}
-                style={{ margin: 5, marginTop: 7, padding: 2 }}
-                disabled={snackbarVisible}
-              >
-                {item}
-              </Chip>
-            ))}
-          </View>
-
-          {error !== "" && (
-            <Text style={{ color: "red", margin: 5 }}>{error}</Text>
-          )}
-
-          <Portal>
-            <Snackbar
-              visible={snackbarVisible}
-              onDismiss={() => setSnackbarVisible(false)}
-              duration={2000}
-              style={{ backgroundColor: "#E7F9ED", borderRadius: 12 }}
-            >
-              <View style={{ flexDirection: "row", alignItems: "center" }}>
-                <MaterialIcons
-                  name="check-circle"
-                  size={22}
-                  color="#33cc66"
-                  style={{ marginRight: 8 }}
-                />
-                <Text style={{ color: "#219653" }}>
-                  Sensor {sensor ? "atualizado" : "cadastrado"} com sucesso!
-                </Text>
-              </View>
-            </Snackbar>
-
-            <Dialog
-              visible={showConfirmSave}
-              onDismiss={() => setShowConfirmSave(false)}
-            >
-              <Dialog.Title>Confirmar Salvar</Dialog.Title>
-              <Dialog.Content>
-                <Text>
-                  Tem certeza que deseja{" "}
-                  {sensor ? "salvar as alterações" : "cadastrar o sensor"}?
-                </Text>
-              </Dialog.Content>
-              <Dialog.Actions>
-                <Button onPress={() => setShowConfirmSave(false)}>
-                  Cancelar
-                </Button>
-                <Button
-                  onPress={async () => {
-                    setShowConfirmSave(false);
-                    await handleSensorRegistration();
-                  }}
+            <View style={styles.chipContainer}>
+              {arrayOutputValues.map((item) => (
+                <Chip
+                  key={item}
+                  mode="flat"
+                  onClose={() => removeOutputValues(item)}
+                  style={styles.chip}
+                  disabled={snackbarVisible}
                 >
-                  Confirmar
-                </Button>
-              </Dialog.Actions>
-            </Dialog>
+                  {item}
+                </Chip>
+              ))}
+            </View>
 
-            <Dialog
-              visible={showConfirmDelete}
-              onDismiss={() => setShowConfirmDelete(false)}
-            >
-              <Dialog.Title>Confirmar Exclusão</Dialog.Title>
-              <Dialog.Content>
-                <Text>Tem certeza que deseja excluir este sensor?</Text>
-              </Dialog.Content>
-              <Dialog.Actions>
-                <Button onPress={() => setShowConfirmDelete(false)}>
-                  Cancelar
-                </Button>
-                <Button
-                  onPress={async () => {
-                    setShowConfirmDelete(false);
-                    await handleDeleteSensor();
-                  }}
-                  textColor="#FF575A"
-                >
-                  Deletar
-                </Button>
-              </Dialog.Actions>
-            </Dialog>
-          </Portal>
+            {error !== "" && <Text style={styles.errorText}>{error}</Text>}
+          </ScrollView>
 
-          <View
-            style={{
-              flexDirection: "row",
-              justifyContent: "space-between",
-              marginTop: 16,
-            }}
-          >
+          {/* Botões fixos */}
+          <View style={styles.fixedButtons}>
             {sensor && sensor.id && (
               <Button
                 mode="contained"
@@ -330,8 +291,8 @@ export default function ManageSensorView() {
                 }}
                 buttonColor="#FF575A"
                 textColor="#fff"
-                style={{ flex: 1, marginRight: 8 }}
-                contentStyle={{ height: 48 }}
+                style={[styles.button, styles.buttonDelete]}
+                contentStyle={styles.buttonContent}
                 disabled={snackbarVisible}
               >
                 Deletar
@@ -344,27 +305,175 @@ export default function ManageSensorView() {
                 Keyboard.dismiss();
                 setShowConfirmSave(true);
               }}
-              contentStyle={{ height: 48 }}
-              style={{ flex: 2 }}
+              contentStyle={styles.buttonContent}
+              style={[styles.button, styles.buttonSave]}
               disabled={snackbarVisible}
             >
               Salvar
             </Button>
           </View>
-        </ScrollView>
+        </View>
       </KeyboardAvoidingView>
+
+      {/* Diálogos e snackbar continuam abaixo normalmente */}
+      <Portal>
+        <Snackbar
+          visible={snackbarVisible}
+          onDismiss={() => setSnackbarVisible(false)}
+          duration={2000}
+          style={styles.snackbar}
+        >
+          <View style={styles.snackbarContent}>
+            <MaterialIcons
+              name="check-circle"
+              size={22}
+              color="#33cc66"
+              style={styles.snackbarIcon}
+            />
+            <Text style={styles.snackbarText}>
+              Sensor {sensor ? "atualizado" : "cadastrado"} com sucesso!
+            </Text>
+          </View>
+        </Snackbar>
+
+        <Dialog
+          visible={showConfirmSave}
+          onDismiss={() => setShowConfirmSave(false)}
+        >
+          <Dialog.Title>Confirmar Salvar</Dialog.Title>
+          <Dialog.Content>
+            <Text>
+              Tem certeza que deseja{" "}
+              {sensor ? "salvar as alterações" : "cadastrar o sensor"}?
+            </Text>
+          </Dialog.Content>
+          <Dialog.Actions>
+            <Button onPress={() => setShowConfirmSave(false)}>Cancelar</Button>
+            <Button
+              onPress={async () => {
+                setShowConfirmSave(false);
+                await handleSensorRegistration();
+              }}
+            >
+              Confirmar
+            </Button>
+          </Dialog.Actions>
+        </Dialog>
+
+        <Dialog
+          visible={showConfirmDelete}
+          onDismiss={() => setShowConfirmDelete(false)}
+        >
+          <Dialog.Title>Confirmar Exclusão</Dialog.Title>
+          <Dialog.Content>
+            <Text>Tem certeza que deseja excluir este sensor?</Text>
+          </Dialog.Content>
+          <Dialog.Actions>
+            <Button onPress={() => setShowConfirmDelete(false)}>
+              Cancelar
+            </Button>
+            <Button
+              onPress={async () => {
+                setShowConfirmDelete(false);
+                await handleDeleteSensor();
+              }}
+              textColor="#FF575A"
+            >
+              Deletar
+            </Button>
+          </Dialog.Actions>
+        </Dialog>
+      </Portal>
     </PaperProvider>
   );
 }
 
 const styles = StyleSheet.create({
-  sensolinkLogo: {
-    width: 100,
-    height: 100,
-  },
   container: {
+    flexGrow: 1,
+    paddingHorizontal: 24,
+    paddingTop: 32,
+    paddingBottom: 120, // Ajuste para acomodar os botões fixos
+  },
+  text: {
+    fontSize: 16,
+    marginBottom: 12,
+    color: "#333",
+  },
+  imageContainer: {
+    alignItems: "center",
+    marginBottom: 24,
+  },
+  circularImage: {
+    width: 180,
+    height: 180,
+    borderRadius: 30,
+    borderWidth: 3,
+    borderColor: "#648DDB",
+    resizeMode: "cover",
+    backgroundColor: "#f0f0f0",
+  },
+  placeholderImage: {
+    tintColor: "#999",
+    resizeMode: "contain",
+  },
+  chipContainer: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    marginBottom: 10,
+  },
+  chip: {
+    margin: 5,
+    marginTop: 7,
+    padding: 2,
+  },
+  errorText: {
+    color: "red",
+    margin: 5,
+  },
+  snackbar: {
+    backgroundColor: "#E7F9ED",
+    borderRadius: 12,
+  },
+  snackbarContent: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  snackbarIcon: {
+    marginRight: 8,
+  },
+  snackbarText: {
+    color: "#219653",
+  },
+  buttonRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginTop: 16,
+  },
+  button: {
     flex: 1,
-    padding: 24,
-    justifyContent: "center",
+  },
+  buttonDelete: {
+    marginRight: 8,
+  },
+  buttonSave: {
+    flex: 2,
+  },
+  buttonContent: {
+    height: 48,
+  },
+  fixedButtons: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    paddingHorizontal: 24,
+    paddingTop: 12,
+    paddingBottom: 60,
+    backgroundColor: "#fff", // mesmo fundo do seu formulário
+    flexDirection: "row",
+    justifyContent: "space-between",
+    borderTopWidth: 1,
+    borderTopColor: "#eee", // opcional, só pra separar visualmente
   },
 });
