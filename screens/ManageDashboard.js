@@ -1,216 +1,222 @@
-import { getAuth } from 'firebase/auth';
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, Dimensions, ScrollView, TouchableOpacity } from 'react-native';
+import {
+  View,
+  StyleSheet,
+  ScrollView,
+  Dimensions,
+  TouchableOpacity,
+} from 'react-native';
 import { LineChart } from 'react-native-gifted-charts';
 import {
-  collection,
-  where,
-  getDocs,
-  query,
-  onSnapshot,
-} from "firebase/firestore";
-import { auth, db } from "../firebase-sdk";
-import { Dropdown, MultiSelectDropdown } from 'react-native-paper-dropdown';
-import { PaperProvider, TextInput, Switch, Button, DefaultTheme } from 'react-native-paper';
+  Text,
+  PaperProvider,
+  TextInput,
+  Button,
+  DefaultTheme,
+  Switch,
+} from 'react-native-paper';
+import { Dropdown } from 'react-native-paper-dropdown';
 import Icon from 'react-native-vector-icons/FontAwesome';
+
+import { collection, getDocs, onSnapshot, query, where } from 'firebase/firestore';
+import { getAuth } from 'firebase/auth';
+import { db } from '../firebase-sdk';
 
 const theme = {
   ...DefaultTheme,
   colors: {
     ...DefaultTheme.colors,
-    primary: "#648DDB",
+    primary: '#648DDB',
   },
 };
 
 export default function ManageDashboardView() {
-  const CHART_TYPES = [
-    {label: 'Gráfico de linha', value: 'line'},
-    // {label: 'KPI', value: 'kpi'}
-  ]
+  const auth = getAuth();
+  const userId = auth.currentUser?.uid;
 
   const [sensorData, setSensorData] = useState([]);
-  const [habilitarScroll, setHabilitarScroll] = useState(true);
-  const [SensorIds, setSensorIds] = useState([]);
-  const [availableSensors, setAvailableSensors] = useState([]);
-  const [availableFields, setAvailableFields] = useState([]);
-  const [enableUse, setEnableUse] = useState(false);
-  const auth_user = getAuth();
-  const [now, setNow] = useState(Date.now());
-  const [selectedColors, setSelectedColors] = useState([]); 
-  const [showEdit, setShowEdit] = useState(true)
+  const [showEdit, setShowEdit] = useState(true);
 
-  const [titleName, setTitleName] = useState("")
-  const [choosedGraph, setChoosedGraph] = useState([])
-  const [choosedSensors, setChoosedSensors] = useState([])
-  const [choosedFields, setChoosedFields] = useState([])
+  const [titleName, setTitleName] = useState('');
+  const [choosedGraph, setChoosedGraph] = useState([]);
+  const [choosedSensor, setChoosedSensor] = useState('');
+  const [choosedField, setChoosedField] = useState('');
   const [confirmedPlots, setConfirmedPlots] = useState([]);
 
-  // Popula array sensors com sensor_id
+  const [availableSensors, setAvailableSensors] = useState([]);
+  const [availableFields, setAvailableFields] = useState([]);
+
+  const CHART_TYPES = [{ label: 'Gráfico de linha', value: 'line' }];
+
+  // Carrega sensores do usuário
   useEffect(() => {
-    const userId = auth_user.currentUser.uid;
-    const q = query(collection(db, "sensors"), where("user_id", "==", userId));
-    
+    if (!userId) return;
+
+    const q = query(collection(db, 'sensors'), where('user_id', '==', userId));
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
-      const results = [];
-      const available_sensors = [];
-      const final_json = []
+      const sensors = [];
+      const fields = [];
 
       querySnapshot.forEach((doc) => {
-        const sensorData = doc.data();
-        const sensorID = doc.id;
+        const data = doc.data();
+        const sensorId = doc.id;
+        sensors.push({ label: sensorId, value: sensorId });
 
-        if (sensorData && sensorID) {
-          results.push(sensorID);
-          available_sensors.push({
-            label: sensorID,
-            value: sensorID
-          })
-
-          if (sensorData.output_values && Array.isArray(sensorData.output_values)) {
-            const available_fields = [];
-            sensorData.output_values.forEach((fieldItem) => {
-              if (typeof fieldItem === 'string' && fieldItem.length > 0) {
-                available_fields.push({
-                  label: fieldItem, 
-                  value: fieldItem 
-                });
-              }
-            });
-            final_json.push({
-              id:sensorID,
-              fields:available_fields
-            })
-          }
+        if (Array.isArray(data.output_values)) {
+          fields.push({
+            id: sensorId,
+            values: data.output_values.map((v) => ({ label: v, value: v })),
+          });
         }
       });
 
-      setSensorIds(results)
-      setAvailableSensors(available_sensors)
-      setAvailableFields(final_json)
-      console.log(final_json.find(item => item.id === "Q96sGnPhDbrnakRe1dVg").fields)
-      console.log(available_sensors)
+      setAvailableSensors(sensors);
+      setAvailableFields(fields);
     });
-    
+
     return () => unsubscribe();
-  }, [auth_user]);
-  
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setNow(Date.now());
-      // nova render a cada 5s
-    }, 5000);
+  }, [userId]);
 
-    return () => clearInterval(interval);
-  }, []);
+  // Ao confirmar gráfico, busca dados reais
+  const handleConfirmPlot = async () => {
+    if (!choosedSensor || !choosedField) return;
 
-  const handleConfirmPlot = () => {
-  const newPlot = {
-    id: Date.now(),
-    graphType: choosedGraph,
-    title: titleName,
-    sensor: choosedSensors,
-    fields: choosedFields,
+    const newPlot = {
+      id: Date.now(),
+      graphType: choosedGraph,
+      title: titleName || `${choosedSensor} - ${choosedField}`,
+      sensor: choosedSensor,
+      field: choosedField,
+    };
+
+    try {
+      const colRef = collection(db, `sensors/${choosedSensor}/readings`);
+      const snapshot = await getDocs(colRef);
+
+      const newData = [];
+
+      snapshot.forEach((doc) => {
+        const data = doc.data();
+        const value = data[choosedField];
+        const timestamp = data.timestamp;
+
+        if (typeof value === 'number' && timestamp?.seconds) {
+          const date = new Date(timestamp.seconds * 1000);
+          const hour = date.getHours().toString().padStart(2, '0');
+          const minute = date.getMinutes().toString().padStart(2, '0');
+          newData.push({
+            value: parseFloat(value.toFixed(1)),
+            label: `${hour}:${minute}`,
+          });
+        }
+      });
+
+      newData.sort((a, b) => a.label.localeCompare(b.label));
+      setSensorData(newData);
+      setConfirmedPlots([...confirmedPlots, newPlot]);
+
+      // Limpa
+      setTitleName('');
+      setChoosedGraph([]);
+      setChoosedSensor('');
+      setChoosedField('');
+    } catch (error) {
+      console.error('Erro ao buscar dados:', error);
+    }
   };
-  setConfirmedPlots([...confirmedPlots, newPlot]);
 
-  setChoosedGraph([]);
-  setTitleName("");
-  setChoosedSensors([]);
-  setChoosedFields([]);
-};
-
-const handleDeletePlot = (idToDelete) => {
-  setConfirmedPlots(confirmedPlots.filter(plot => plot.id !== idToDelete));
-};
+  const handleDeletePlot = (idToDelete) => {
+    setConfirmedPlots(confirmedPlots.filter((p) => p.id !== idToDelete));
+    setSensorData([]);
+  };
 
   return (
     <PaperProvider theme={theme}>
-    <ScrollView>
-    <View>
-      <Text>Habilitar criação</Text>
-      <Switch
-        value={showEdit}
-        onValueChange={setShowEdit}
-        color='#648DDB'
-      />
-    </View>
-
-    {showEdit && (
-      <View style={styles.containerDrop}>
-        <Text>Criação de Gráficos/KPIs</Text>
-        <Dropdown
-          label="Selecionar gráficos/KPIs..."
-          options={CHART_TYPES}
-          mode='outlined'
-          disabled={enableUse}
-          value={choosedGraph}
-          onSelect={setChoosedGraph}
-        />
-        <TextInput
-          label="Título do gráfico..."
-          mode="outlined"
-          value={titleName}
-          onChangeText={setTitleName}
-        />
-        <Dropdown
-          label="Selecionar sensor..."
-          mode='outlined'
-          options={availableSensors}
-          disabled={enableUse}
-          value={choosedSensors}
-          onSelect={setChoosedSensors}
-        />
-        <Dropdown 
-          label="Selecionar campos..."
-          mode='outlined'
-          options={availableFields.find(item => item.id === choosedSensors) ? availableFields.find(item => item.id === choosedSensors).fields : []}
-          disabled={enableUse}
-          value={choosedFields}
-          onSelect={setChoosedFields}
-        />
-        <Button
-          mode="contained"
-          onPress={handleConfirmPlot}
-        >
-          Confirmar
-        </Button>
-      </View>
-    )}
-
-    {confirmedPlots.map((plot) => (
-      <View key={plot.id} style={styles.chartWrapper}>
-        <View style={styles.chartContainer}>
-          <View style={styles.titleContainer}> 
-            <Text style={styles.chartTitle}>{plot.title || "Gráfico de Sensor"}</Text>
-            <TouchableOpacity onPress={() => handleDeletePlot(plot.id)} style={styles.deleteIcon}>
-              <Icon name="trash" size={20} color="red" />
-            </TouchableOpacity>
-          </View>
-          <LineChart
-            data={sensorData}
-            scrollToEnd
-            width={Dimensions.get('window').width * 0.68}
-            height={200}
-            spacing={50}
-            color="#007BFF"
-            dataPointsColor="#007BFF"
-            dataPointsRadius={4}
-          />
+      <ScrollView>
+        <View style={{ margin: 16 }}>
+          <Text style={{ marginBottom: 8 }}>Habilitar criação</Text>
+          <Switch value={showEdit} onValueChange={setShowEdit} color="#648DDB" />
         </View>
-      </View>
-    ))}
 
-    </ScrollView>
-  </PaperProvider>
+        {showEdit && (
+          <View style={styles.containerDrop}>
+            <Text style={styles.sectionTitle}>Criar gráfico</Text>
+            <Dropdown
+              label="Tipo de gráfico"
+              options={CHART_TYPES}
+              mode="outlined"
+              value={choosedGraph}
+              onSelect={setChoosedGraph}
+            />
+            <TextInput
+              label="Título do gráfico"
+              value={titleName}
+              onChangeText={setTitleName}
+              mode="outlined"
+              style={{ marginVertical: 8 }}
+            />
+            <Dropdown
+              label="Sensor"
+              options={availableSensors}
+              mode="outlined"
+              value={choosedSensor}
+              onSelect={setChoosedSensor}
+            />
+            <Dropdown
+              label="Campo"
+              options={
+                availableFields.find((item) => item.id === choosedSensor)?.values || []
+              }
+              mode="outlined"
+              value={choosedField}
+              onSelect={setChoosedField}
+            />
+            <Button
+              mode="contained"
+              style={{ marginTop: 12 }}
+              onPress={handleConfirmPlot}
+              disabled={!choosedGraph || !choosedSensor || !choosedField}
+            >
+              Confirmar
+            </Button>
+          </View>
+        )}
+
+        {confirmedPlots.map((plot) => (
+          <View key={plot.id} style={styles.chartWrapper}>
+            <View style={styles.chartContainer}>
+              <View style={styles.titleContainer}>
+                <Text style={styles.chartTitle}>{plot.title}</Text>
+                <TouchableOpacity onPress={() => handleDeletePlot(plot.id)}>
+                  <Icon name="trash" size={20} color="red" />
+                </TouchableOpacity>
+              </View>
+              <LineChart
+                data={sensorData}
+                width={Dimensions.get('window').width * 0.9}
+                height={200}
+                spacing={40}
+                color="#007BFF"
+                dataPointsColor="#007BFF"
+                dataPointsRadius={4}
+                thickness={2}
+                curveType="bezier"
+              />
+            </View>
+          </View>
+        ))}
+      </ScrollView>
+    </PaperProvider>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f0f0f0',
-    justifyContent: 'center',
+  containerDrop: {
+    marginHorizontal: 16,
+  },
+  chartWrapper: {
     alignItems: 'center',
+    marginVertical: 10,
   },
   chartContainer: {
     backgroundColor: '#ffffff',
@@ -224,13 +230,21 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
   },
-  title: {
-    fontSize: 24,
+  chartTitle: {
+    fontSize: 18,
     fontWeight: 'bold',
-    marginBottom: 24,
-    color: '#333'
+    color: '#333',
+    flex: 1,
   },
-  containerDrop:{
-    margin:10
-  }
+  titleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 10,
+    justifyContent: 'space-between',
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 10,
+  },
 });

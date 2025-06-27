@@ -152,6 +152,75 @@ const globalStyles = StyleSheet.create({
     borderRadius: 4,
     padding: 0,
   },
+  
+  // Estilos gerais
+centeredContainer: {
+  flex: 1,
+  justifyContent: "center",
+  alignItems: "center",
+  padding: 24,
+  backgroundColor: "#f7f7f7",
+},
+
+// Container principal da tela do usuário
+userInfoContainer: {
+  flex: 1,
+  padding: 24,
+  backgroundColor: "#f7f7f7",
+},
+
+// Avatar com cor primária
+avatarPrimary: {
+  alignSelf: "center",
+  marginBottom: 32,
+  backgroundColor: "#648DDB",
+},
+
+// Rótulo de campo (ex: "Nome", "E-mail", etc)
+userInfoLabel: {
+  fontSize: 14,
+  fontWeight: "700",
+  color: "#555",
+  marginBottom: 4,
+},
+
+// Valor do campo (ex: nome do usuário)
+userInfoValue: {
+  fontSize: 18,
+  fontWeight: "600",
+  color: "#222",
+  marginBottom: 16,
+},
+
+// Estilo específico para o UID (menor e mais claro)
+userInfoUid: {
+  fontSize: 12,
+  color: "#999",
+  marginBottom: 24,
+},
+
+// Separadores entre seções
+userInfoDivider: {
+  marginVertical: 8,
+},
+
+// Botão de logout (caso queira adicionar depois)
+userLogoutButton: {
+  marginTop: 32,
+  borderRadius: 12,
+},
+
+userPhoto: {
+  width: 96,
+  height: 96,
+  borderRadius: 48,
+  alignSelf: "center",
+  marginBottom: 32,
+  borderWidth: 2,
+  borderColor: "#648DDB",
+  backgroundColor: "#e1e1e1",
+},
+
 });
 
 export default globalStyles;
