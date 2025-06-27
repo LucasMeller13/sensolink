@@ -36,7 +36,7 @@ export default function LoginScreen() {
   const [forgotError, setForgotError] = useState("");
   const navigation = useNavigation();
 
-  const handleGoogleLogin = () => {};
+  const handleGoogleLogin = () => { };
 
   async function handleDefaultLogin() {
     try {
@@ -94,48 +94,65 @@ export default function LoginScreen() {
           style={styles.sensolinkLogo}
         />
 
-        <TextInput
-          label="Email"
-          value={email}
-          onChangeText={setEmail}
-          mode="outlined"
-          autoCapitalize="none"
-          keyboardType="email-address"
-          returnKeyType="done"
-          onSubmitEditing={handleDefaultLogin}
-        />
+        <View style={{ marginBottom: 16 }}>
+          <Text style={{ fontSize: 18, marginBottom: 5, fontWeight: "700" }}>
+            Email
+          </Text>
 
-        <TextInput
-          label="Senha"
-          value={password}
-          onChangeText={setPassword}
-          mode="outlined"
-          autoCapitalize="none"
-          secureTextEntry={!visibilityPassword}
-          returnKeyType="done"
-          onSubmitEditing={handleDefaultLogin}
-          right={
-            <TextInput.Icon
-              icon={visibilityPassword ? "eye" : "eye-off"}
-              onPress={() => setVisibilityPassword(!visibilityPassword)}
-            />
-          }
-        />
+          <TextInput
+            placeholder="Digite seu e-mail..."
+            value={email}
+            onChangeText={setEmail}
+            mode="outlined"
+            autoCapitalize="none"
+            keyboardType="email-address"
+            returnKeyType="done"
+            onSubmitEditing={handleDefaultLogin}
+            contentStyle={{ height: 64 }}
+            theme={{ roundness: 12 }}
+            outlineStyle={{ borderWidth: 2, borderColor: "#e1e1e1" }}
+          />
+        </View>
 
-        {error !== "" && (
-          <Text style={{ color: "red", marginVertical: 8 }}>{error}</Text>
-        )}
+        <View style={{ marginBottom: 16 }}>
+          <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 5 }}>
+            <Text style={{ fontSize: 18, fontWeight: "700" }}>
+              Senha
+            </Text>
 
-        <TouchableOpacity
-          onPress={() => {
-            setDialogVisible(true);
-            setForgotEmail(email);
-            setForgotMessage("");
-            setForgotError("");
-          }}
-        >
-          <Text>Esqueceu a senha?</Text>
-        </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => {
+                setDialogVisible(true);
+                setForgotEmail(email);
+                setForgotMessage("");
+                setForgotError("");
+              }}
+            >
+              <Text style={{ color: theme.colors.primary, fontSize: 14, fontWeight: "700" }}>Esqueceu a senha?</Text>
+            </TouchableOpacity>
+          </View>
+
+          <TextInput
+            placeholder="Digite sua senha..."
+            value={password}
+            onChangeText={setPassword}
+            mode="outlined"
+            autoCapitalize="none"
+            secureTextEntry={!visibilityPassword}
+            returnKeyType="done"
+            onSubmitEditing={handleDefaultLogin}
+            right={
+              <TextInput.Icon
+                icon={visibilityPassword ? "eye" : "eye-off"}
+                onPress={() => setVisibilityPassword(!visibilityPassword)}
+                style={{ marginTop: 16 }}
+              />
+            }
+            contentStyle={{ height: 64 }}
+            theme={{ roundness: 12 }}
+            outlineStyle={{ borderWidth: 2, borderColor: "#e1e1e1" }}
+          />
+        </View>
 
         <Portal>
           <Dialog
@@ -172,29 +189,24 @@ export default function LoginScreen() {
         <Button
           mode="contained"
           onPress={() => handleDefaultLogin()}
-          contentStyle={{ height: 48 }}
+          contentStyle={{ height: 56 }}
+          style={{ marginBottom: 2, borderRadius: 12 }}
         >
           Continuar
         </Button>
 
-        <View>
-          <Text>Não tem conta?</Text>
+        {error !== "" && (
+          <Text style={{ color: "red", marginVertical: 8 }}>{error}</Text>
+        )}
+
+        <View style={{ flexDirection: "row", justifyContent: "center", marginTop: 16 }}>
+          <Text style={{  color: "#999999", fontSize: 16, fontWeight: "700" }}>Não tem conta? </Text>
           <TouchableOpacity>
-            <Text onPress={() => navigation.navigate("RegisterUser")}>
+            <Text style={{ color: "#648DDB", fontSize: 16, fontWeight: "700" }}onPress={() => navigation.navigate("RegisterUser")}>
               Cadastrar
             </Text>
           </TouchableOpacity>
         </View>
-
-        <View>
-          <Divider style={{ flex: 1 }} />
-          <Text>Ou</Text>
-          <Divider style={{ flex: 1 }} />
-        </View>
-
-        <Button mode="contained" onPress={handleGoogleLogin}>
-          Login com o Google
-        </Button>
       </View>
     </PaperProvider>
   );
@@ -202,12 +214,15 @@ export default function LoginScreen() {
 
 const styles = StyleSheet.create({
   sensolinkLogo: {
-    width: 100,
-    height: 100,
+    height: 170,
+    resizeMode: "contain",
+    alignSelf: "center",
+    marginBottom: 24,
   },
   container: {
     flex: 1,
     padding: 24,
-    justifyContent: "center",
+    paddingTop: 100,
+    backgroundColor: "#f7f7f7",
   },
 });

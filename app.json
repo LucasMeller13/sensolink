@@ -21,14 +21,14 @@
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "package": "com.lucasmeller.sensolink"
+      "package": "com.lemitch.sensolink"
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
     "extra": {
       "eas": {
-        "projectId": "905de43d-1764-4e83-b4e6-c1a3e9b6875f"
+        "projectId": "0bb49685-8ed2-435b-bbcf-8cb2ac9ff94a"
       }
     }
   }
