@@ -1,22 +1,9 @@
-import { useState, useLayoutEffect } from "react";
-import { Image, StyleSheet, TouchableOpacity, View } from "react-native";
-import {
-  Button,
-  DefaultTheme,
-  Dialog,
-  Divider,
-  PaperProvider,
-  Portal,
-  Text,
-  TextInput,
-} from "react-native-paper";
-import {
-  signInWithEmailAndPassword,
-  sendPasswordResetEmail,
-} from "firebase/auth";
-import { auth } from "../firebase-sdk";
+import { useLayoutEffect } from "react";
+import { TouchableOpacity, View } from "react-native";
+import { Text } from "react-native-paper";
 import Feather from "@expo/vector-icons/Feather";
 import { useNavigation } from "@react-navigation/native";
+import styles from "../styles/globalStyles";
 
 export default function DashboardView() {
   const navigation = useNavigation();
@@ -41,21 +28,8 @@ export default function DashboardView() {
   }, [navigation]);
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.texto}>Em manutenção...</Text>
+    <View style={styles.centeredContainer}>
+      <Text style={styles.maintenanceText}>Em manutenção...</Text>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  texto: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "#333",
-  },
-});
