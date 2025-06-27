@@ -103,46 +103,82 @@ export default function RegisterUserScreen() {
             style={styles.sensolinkLogo}
           />
 
-          <TextInput
-            label="Nome"
-            value={name}
-            onChangeText={setName}
-            mode="outlined"
-          />
+          <View style={{ marginBottom: 16 }}>
+            <Text style={{ fontSize: 18, marginBottom: 5, fontWeight: "700" }}>
+              Nome
+            </Text>
+            <TextInput
+              placeholder="Digite o nome de usuário desejado..."
+              placeholderTextColor={"#a1a1a1"}
+              value={name}
+              onChangeText={setName}
+              mode="outlined"
+              autoCapitalize="none"
+              keyboardType="default"
+              returnKeyType="done"
+              contentStyle={{ height: 64 }}
+              theme={{ roundness: 12 }}
+              outlineStyle={{ borderWidth: 2, borderColor: "#e1e1e1" }}
+            />
+          </View>
 
-          <TextInput
-            label="Email"
-            value={email}
-            onChangeText={setEmail}
-            mode="outlined"
-            autoCapitalize="none"
-            keyboardType="email-address"
-          />
+          <View style={{ marginBottom: 16 }}>
+            <Text style={{ fontSize: 18, marginBottom: 5, fontWeight: "700" }}>
+              E-mail
+            </Text>
+            <TextInput
+              placeholder="Digite o e-mail desejado..."
+              placeholderTextColor={"#a1a1a1"}
+              value={email}
+              onChangeText={setEmail}
+              mode="outlined"
+              autoCapitalize="none"
+              keyboardType="email-address"
+              returnKeyType="done"
+              contentStyle={{ height: 64 }}
+              theme={{ roundness: 12 }}
+              outlineStyle={{ borderWidth: 2, borderColor: "#e1e1e1" }}
+            />
+          </View>
 
-          <TextInput
-            label="Senha"
-            value={firstPassword}
-            onChangeText={setFirstPassword}
-            mode="outlined"
-            autoCapitalize="none"
-            secureTextEntry={!visibilityPassword}
-            returnKeyType="done"
-          />
+          <View style={{ marginBottom: 16 }}>
+            <Text style={{ fontSize: 18, marginBottom: 5, fontWeight: "700" }}>
+              Senha
+            </Text>
+            <TextInput
+              placeholder="Digite a senha desejada..."
+              placeholderTextColor={"#a1a1a1"}
+              value={firstPassword}
+              onChangeText={setFirstPassword}
+              mode="outlined"
+              autoCapitalize="none"
+              secureTextEntry={!visibilityPassword}
+              returnKeyType="done"
+              contentStyle={{ height: 64 }}
+              theme={{ roundness: 12 }}
+              outlineStyle={{ borderWidth: 2, borderColor: "#e1e1e1" }}
+            />
+          </View>
 
-          <TextInput
-            label="Repita a senha"
-            value={secondPassword}
-            onChangeText={setSecondPassword}
-            mode="outlined"
-            autoCapitalize="none"
-            secureTextEntry={!visibilityPassword}
-            returnKeyType="done"
-            onSubmitEditing={handleRegistrationUser}
-          />
-
-          {errorMessage !== "" && (
-            <Text style={{ color: "red" }}>{errorMessage}</Text>
-          )}
+          <View style={{ marginBottom: 16 }}>
+            <Text style={{ fontSize: 18, marginBottom: 5, fontWeight: "700" }}>
+              Confirme sua senha
+            </Text>
+            <TextInput
+              placeholder="Confirme a senha desejada..."
+              placeholderTextColor={"#a1a1a1"}
+              value={secondPassword}
+              onChangeText={setSecondPassword}
+              mode="outlined"
+              autoCapitalize="none"
+              secureTextEntry={!visibilityPassword}
+              returnKeyType="done"
+              onSubmitEditing={handleRegistrationUser}
+              contentStyle={{ height: 64 }}
+              theme={{ roundness: 12 }}
+              outlineStyle={{ borderWidth: 2, borderColor: "#e1e1e1" }}
+            />
+          </View>
 
           {/* <Portal>
                         <Snackbar
@@ -161,10 +197,16 @@ export default function RegisterUserScreen() {
           <Button
             mode="contained"
             onPress={handleRegistrationUser}
-            contentStyle={{ height: 48 }}
+            contentStyle={{ height: 56 }}
+            style={{ marginBottom: 2, borderRadius: 12 }}
           >
             Cadastrar
           </Button>
+
+          {errorMessage !== "" && (
+            <Text style={{ color: "red" }}>{errorMessage}</Text>
+          )}
+          
         </ScrollView>
       </KeyboardAvoidingView>
     </PaperProvider>
@@ -173,13 +215,16 @@ export default function RegisterUserScreen() {
 
 const styles = StyleSheet.create({
   sensolinkLogo: {
-    width: 100,
-    height: 100,
+    height: 170,
+    resizeMode: "contain",
+    alignSelf: "center",
+    marginBottom: 24,
   },
   container: {
     flexGrow: 1,
     padding: 24,
-    paddingBottom: 40,
+    paddingTop: 100,
     justifyContent: "center",
+    backgroundColor: "#f7f7f7",
   },
 });

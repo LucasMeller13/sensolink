@@ -37,7 +37,7 @@ function AppTabs() {
             <MaterialIcons name="sensors" size={24} color="#648DDB" />
           ),
         }}
-        name="SensorView"
+        name="Sensores"
         component={SensorView}
       />
 
@@ -47,7 +47,7 @@ function AppTabs() {
             <AntDesign name="dotchart" size={24} color="#648DDB" />
           ),
         }}
-        name="DashboardView"
+        name="Dashboards"
         component={DashboardView}
       />
 
@@ -65,7 +65,7 @@ function AppTabs() {
             </TouchableOpacity>
           ),
         }}
-        name="UserInfoView"
+        name="Usuário"
         component={UserInfoView}
       />
     </BottomTab.Navigator>
@@ -80,7 +80,7 @@ function AuthTabs() {
         component={LoginScreen}
         options={{ headerShown: false }}
       />
-      <Stack.Screen name="RegisterUser" component={RegisterUserScreen} />
+      <Stack.Screen name="RegisterUser" component={RegisterUserScreen} options={{ headerShown: false }} />
     </Stack.Navigator>
   );
 }
@@ -96,12 +96,12 @@ function AppStack() {
       <Stack.Screen
         name="ManageSensorView"
         component={ManageSensorView}
-        options={{ title: "Manage Sensors" }}
+        options={{ title: "Gerenciamento de Sensor" }}
       />
       <Stack.Screen
         name="ManageDashboardView"
         component={ManageDashboardView}
-        options={{ title: "Manage Dashboards" }}
+        options={{ title: "Gerenciamento de Dashboards" }}
       />
     </Stack.Navigator>
   );

@@ -1,75 +1,35 @@
 import { useState, useLayoutEffect, useEffect } from "react";
-import {
-  Image,
-  StyleSheet,
-  TouchableOpacity,
-  View,
-  ScrollView,
-} from "react-native";
-import {
-  Button,
-  DefaultTheme,
-  Dialog,
-  Divider,
-  PaperProvider,
-  Portal,
-  Text,
-  TextInput,
-} from "react-native-paper";
-import {
-  signInWithEmailAndPassword,
-  sendPasswordResetEmail,
-} from "firebase/auth";
-import {
-  collection,
-  where,
-  getDocs,
-  query,
-  onSnapshot,
-} from "firebase/firestore";
-import { auth, db } from "../firebase-sdk";
-import { getAuth } from "firebase/auth";
+import { ScrollView } from "react-native";
+import { PaperProvider, Text } from "react-native-paper";
 import Feather from "@expo/vector-icons/Feather";
 import { useNavigation } from "@react-navigation/native";
 import * as FileSystem from "expo-file-system";
 import * as Sharing from "expo-sharing";
+import {
+  collection,
+  where,
+  onSnapshot,
+  query,
+} from "firebase/firestore";
+import { getAuth } from "firebase/auth";
+import { db } from "../firebase-sdk";
 
-const theme = {
-  ...DefaultTheme,
-  colors: {
-    ...DefaultTheme.colors,
-    primary: "#648DDB",
-  },
-};
+import theme from "../styles/theme";
+import styles from "../styles/globalStyles";
+import SensorCard from "../components/SensorCard";
+import SortButtons from "../components/SortButtons";
+import { TouchableOpacity, View } from "react-native";
 
 export default function SensorView() {
   const [sensors, setSensors] = useState([]);
-  const navigation = useNavigation();
-  const auth_user = getAuth();
   const [now, setNow] = useState(Date.now());
   const [sortBy, setSortBy] = useState("name");
   const [sortDirection, setSortDirection] = useState("asc");
-
-  function getSensorStatus(sensor) {
-    const freqSecs = Number(sensor.frequency);
-    const created_at = new Date(sensor.created_at.seconds * 1000);
-    const lastUpdate = new Date(sensor.updated_at.seconds * 1000);
-    const now = new Date();
-    const diffSecs = (now - lastUpdate) / 1000;
-
-    if (diffSecs > 1.5 * freqSecs || (lastUpdate - created_at) / 1000 < 10) {
-      return { text: "Offline", color: "#FF575A" };
-    } else {
-      return { text: "Online", color: "#31D728" };
-    }
-  }
+  const navigation = useNavigation();
+  const auth_user = getAuth();
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      setNow(Date.now());
-      // nova render a cada 5s
-    }, 5000);
-
+    const interval = setInterval(() => setNow(Date.now()), 5000);
     return () => clearInterval(interval);
   }, []);
 
@@ -131,9 +91,7 @@ export default function SensorView() {
     const csv = sensorsToCSV(sensors);
     const filename = "sensors.csv";
     const fileUri = FileSystem.cacheDirectory + filename;
-    await FileSystem.writeAsStringAsync(fileUri, csv, {
-      encoding: FileSystem.EncodingType.UTF8,
-    });
+    await FileSystem.writeAsStringAsync(fileUri, csv);
     await Sharing.shareAsync(fileUri, {
       mimeType: "text/csv",
       dialogTitle: "Compartilhar dados dos sensores",
@@ -142,13 +100,7 @@ export default function SensorView() {
   }
 
   function sensorsToCSV(sensors) {
-    const header = [
-      "ID",
-      "Name",
-      "Description",
-      "Output Values",
-      "Last Update",
-    ];
+    const header = ["ID", "Name", "Description", "Output Values", "Last Update"];
     const lines = sensors.map((sensor) => {
       const outputValues = (sensor.output_values || []).join("; ");
       const lastUpdate = sensor.updated_at
@@ -168,85 +120,18 @@ export default function SensorView() {
     return [header.join(","), ...lines].join("\n");
   }
 
-  function sensorCard(sensor, status, handleCardPress) {
-    return (
-      <TouchableOpacity
-        key={sensor.id}
-        onPress={() => handleCardPress(sensor)}
-        activeOpacity={0.8}
-      >
-        <View style={styles.card}>
-          <View style={{ flexDirection: "row" }}>
-            {/* LEFT COLUMN */}
-            <View
-              style={{ flex: 4, paddingRight: 12, justifyContent: "center" }}
-            >
-              <Text style={styles.title}>{sensor.name}</Text>
+  function getSensorStatus(sensor) {
+    const freqSecs = Number(sensor.frequency);
+    const created_at = new Date(sensor.created_at.seconds * 1000);
+    const lastUpdate = new Date(sensor.updated_at.seconds * 1000);
+    const now = new Date();
+    const diffSecs = (now - lastUpdate) / 1000;
 
-              <Text style={styles.desc}>
-                <Text style={{ fontWeight: "bold" }}>Descrição: </Text>
-                {sensor.description && sensor.description.trim() !== ""
-                  ? sensor.description
-                  : "Sem descrição."}
-              </Text>
-
-              <Text style={{ fontSize: 12, marginTop: 5 }}>
-                <Text style={{ fontWeight: "bold" }}>ID: </Text>
-                {sensor.id}
-              </Text>
-
-              <Text style={{ fontSize: 12, marginTop: 4 }}>
-                <Text style={{ fontWeight: "bold" }}>Tipos de dados: </Text>
-                {(sensor.output_values || []).join(", ") || "Nenhum"}
-              </Text>
-
-              <Text style={styles.lastData}>
-                Criado em:{" "}
-                {sensor.created_at
-                  ? new Date(sensor.created_at.seconds * 1000).toLocaleString(
-                      "pt-BR",
-                      { hour12: false }
-                    )
-                  : "--"}
-              </Text>
-
-              <Text style={styles.lastData}>
-                Última atualização:{" "}
-                {sensor.updated_at
-                  ? new Date(sensor.updated_at.seconds * 1000).toLocaleString(
-                      "pt-BR",
-                      { hour12: false }
-                    )
-                  : "--"}
-              </Text>
-            </View>
-
-            {/* VERTICAL DIVIDER */}
-            <View
-              style={{
-                width: 1.3,
-                backgroundColor: "#DDD",
-                marginVertical: 8,
-                margin: 10,
-              }}
-            />
-
-            {/* RIGHT COLUMN */}
-            <View
-              style={{
-                flex: 1,
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              <Text style={{ ...styles.status, color: status.color }}>
-                {status.text}
-              </Text>
-            </View>
-          </View>
-        </View>
-      </TouchableOpacity>
-    );
+    if (diffSecs > 1.5 * freqSecs || (lastUpdate - created_at) / 1000 < 10) {
+      return { text: "Offline", color: "#FF575A" };
+    } else {
+      return { text: "Online", color: "#31D728" };
+    }
   }
 
   function handleCardPress(sensor) {
@@ -260,9 +145,7 @@ export default function SensorView() {
       sorted.sort((a, b) => {
         const aName = (a.name || "").toLowerCase();
         const bName = (b.name || "").toLowerCase();
-        if (aName < bName) return sortDirection === "asc" ? -1 : 1;
-        if (aName > bName) return sortDirection === "asc" ? 1 : -1;
-        return 0;
+        return sortDirection === "asc" ? aName.localeCompare(bName) : bName.localeCompare(aName);
       });
     } else if (sortBy === "updated_at") {
       sorted.sort((a, b) => {
@@ -277,103 +160,29 @@ export default function SensorView() {
 
   return (
     <PaperProvider theme={theme}>
-      <ScrollView
-        contentContainerStyle={{ paddingVertical: 12, paddingHorizontal: 4 }}
-      >
-        <View
-          style={{
-            flexDirection: "row",
-            justifyContent: "flex-end",
-            alignItems: "center",
-          }}
-        >
-          <Button
-            mode={sortBy === "name" ? "contained" : "outlined"}
-            style={styles.button_order}
-            onPress={() => setSortBy("name")}
-          >
-            Alfabética
-          </Button>
-
-          <Button
-            mode={sortBy === "updated_at" ? "contained" : "outlined"}
-            style={styles.button_order}
-            onPress={() => setSortBy("updated_at")}
-          >
-            Última atualização
-          </Button>
-
-          <Button
-            icon={sortDirection === "asc" ? "arrow-up" : "arrow-down"}
-            compact
-            onPress={() =>
-              setSortDirection(sortDirection === "asc" ? "desc" : "asc")
-            }
-          />
-        </View>
+      <ScrollView contentContainerStyle={{ paddingVertical: 12, paddingHorizontal: 4 }}>
+        <SortButtons
+          sortBy={sortBy}
+          setSortBy={setSortBy}
+          sortDirection={sortDirection}
+          setSortDirection={setSortDirection}
+        />
 
         {getSortedSensors().length === 0 ? (
-          <Text
-            style={{
-              textAlign: "center",
-              marginTop: 48,
-              color: "#999",
-              fontSize: 15,
-            }}
-          >
+          <Text style={{ textAlign: "center", marginTop: 48, color: "#999", fontSize: 15 }}>
             Nenhum sensor cadastrado no momento.
           </Text>
         ) : (
-          getSortedSensors().map((sensor) => {
-            const status = getSensorStatus(sensor);
-            return sensorCard(sensor, status, handleCardPress);
-          })
+          getSortedSensors().map((sensor) => (
+            <SensorCard
+              key={sensor.id}
+              sensor={sensor}
+              status={getSensorStatus(sensor)}
+              onPress={() => handleCardPress(sensor)}
+            />
+          ))
         )}
       </ScrollView>
     </PaperProvider>
   );
 }
-
-const styles = StyleSheet.create({
-  card: {
-    backgroundColor: "#FFF",
-    borderRadius: 12,
-    padding: 16,
-    marginVertical: 8,
-    marginHorizontal: 4,
-    elevation: 2,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.13,
-    shadowRadius: 8,
-    borderWidth: 1,
-    borderColor: "#EEE",
-  },
-  title: {
-    fontWeight: "bold",
-    fontSize: 18,
-    flex: 1,
-    marginRight: 6,
-  },
-  status: {
-    fontWeight: "bold",
-    fontSize: 20,
-    alignSelf: "flex-start",
-  },
-  desc: {
-    fontSize: 12,
-    color: "#444",
-    marginTop: 2,
-    marginBottom: 0,
-  },
-  lastData: {
-    fontSize: 12,
-    color: "#888",
-    marginTop: 6,
-  },
-  button_order: {
-    marginRight: 4,
-    borderRadius: 4,
-    padding: 0,
-  },
-});
