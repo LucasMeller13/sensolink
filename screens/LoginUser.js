@@ -96,11 +96,12 @@ export default function LoginScreen() {
 
         <View style={{ marginBottom: 16 }}>
           <Text style={{ fontSize: 18, marginBottom: 5, fontWeight: "700" }}>
-            Email
+            E-mail
           </Text>
 
           <TextInput
             placeholder="Digite seu e-mail..."
+            placeholderTextColor={"#a1a1a1"}
             value={email}
             onChangeText={setEmail}
             mode="outlined"
@@ -134,6 +135,7 @@ export default function LoginScreen() {
 
           <TextInput
             placeholder="Digite sua senha..."
+            placeholderTextColor={"#a1a1a1"}
             value={password}
             onChangeText={setPassword}
             mode="outlined"

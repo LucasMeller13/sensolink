@@ -80,7 +80,7 @@ function AuthTabs() {
         component={LoginScreen}
         options={{ headerShown: false }}
       />
-      <Stack.Screen name="RegisterUser" component={RegisterUserScreen} />
+      <Stack.Screen name="RegisterUser" component={RegisterUserScreen} options={{ headerShown: false }} />
     </Stack.Navigator>
   );
 }
