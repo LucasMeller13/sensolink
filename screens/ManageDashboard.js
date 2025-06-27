@@ -1,6 +1,6 @@
 import { getAuth } from 'firebase/auth';
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, Dimensions, ScrollView, TouchableOpacity } from 'react-native';
 import { LineChart } from 'react-native-gifted-charts';
 import {
   collection,
@@ -11,33 +11,39 @@ import {
 } from "firebase/firestore";
 import { auth, db } from "../firebase-sdk";
 import { Dropdown, MultiSelectDropdown } from 'react-native-paper-dropdown';
-import { PaperProvider, TextInput, Switch } from 'react-native-paper';
+import { PaperProvider, TextInput, Switch, Button, DefaultTheme } from 'react-native-paper';
+import Icon from 'react-native-vector-icons/FontAwesome';
 
-const OPTIONS = [
-  { label: 'Male', value: 'male' },
-  { label: 'Female', value: 'female' },
-  { label: 'Other', value: 'other' },
-];
-
-const MULTI_SELECT_OPTIONS = [
-  { label: 'White', value: 'white' },
-  { label: 'Red', value: 'red' },
-  { label: 'Blue', value: 'blue' },
-  { label: 'Green', value: 'green' },
-  { label: 'Orange', value: 'orange' },
-];
+const theme = {
+  ...DefaultTheme,
+  colors: {
+    ...DefaultTheme.colors,
+    primary: "#648DDB",
+  },
+};
 
 export default function ManageDashboardView() {
+  const CHART_TYPES = [
+    {label: 'Gráfico de linha', value: 'line'},
+    // {label: 'KPI', value: 'kpi'}
+  ]
+
   const [sensorData, setSensorData] = useState([]);
   const [habilitarScroll, setHabilitarScroll] = useState(true);
   const [SensorIds, setSensorIds] = useState([]);
+  const [availableSensors, setAvailableSensors] = useState([]);
+  const [availableFields, setAvailableFields] = useState([]);
   const [enableUse, setEnableUse] = useState(false);
   const auth_user = getAuth();
   const [now, setNow] = useState(Date.now());
   const [selectedColors, setSelectedColors] = useState([]); 
-  const [titleName, setTitleName] = useState("")
   const [showEdit, setShowEdit] = useState(true)
 
+  const [titleName, setTitleName] = useState("")
+  const [choosedGraph, setChoosedGraph] = useState([])
+  const [choosedSensors, setChoosedSensors] = useState([])
+  const [choosedFields, setChoosedFields] = useState([])
+  const [confirmedPlots, setConfirmedPlots] = useState([]);
 
   // Popula array sensors com sensor_id
   useEffect(() => {
@@ -46,14 +52,43 @@ export default function ManageDashboardView() {
     
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
       const results = [];
+      const available_sensors = [];
+      const final_json = []
+
       querySnapshot.forEach((doc) => {
         const sensorData = doc.data();
         const sensorID = doc.id;
+
         if (sensorData && sensorID) {
           results.push(sensorID);
+          available_sensors.push({
+            label: sensorID,
+            value: sensorID
+          })
+
+          if (sensorData.output_values && Array.isArray(sensorData.output_values)) {
+            const available_fields = [];
+            sensorData.output_values.forEach((fieldItem) => {
+              if (typeof fieldItem === 'string' && fieldItem.length > 0) {
+                available_fields.push({
+                  label: fieldItem, 
+                  value: fieldItem 
+                });
+              }
+            });
+            final_json.push({
+              id:sensorID,
+              fields:available_fields
+            })
+          }
         }
       });
-      setSensorIds(results); 
+
+      setSensorIds(results)
+      setAvailableSensors(available_sensors)
+      setAvailableFields(final_json)
+      console.log(final_json.find(item => item.id === "Q96sGnPhDbrnakRe1dVg").fields)
+      console.log(available_sensors)
     });
     
     return () => unsubscribe();
@@ -68,57 +103,105 @@ export default function ManageDashboardView() {
     return () => clearInterval(interval);
   }, []);
 
+  const handleConfirmPlot = () => {
+  const newPlot = {
+    id: Date.now(),
+    graphType: choosedGraph,
+    title: titleName,
+    sensor: choosedSensors,
+    fields: choosedFields,
+  };
+  setConfirmedPlots([...confirmedPlots, newPlot]);
+
+  setChoosedGraph([]);
+  setTitleName("");
+  setChoosedSensors([]);
+  setChoosedFields([]);
+};
+
+const handleDeletePlot = (idToDelete) => {
+  setConfirmedPlots(confirmedPlots.filter(plot => plot.id !== idToDelete));
+};
+
   return (
-    <PaperProvider>
+    <PaperProvider theme={theme}>
+    <ScrollView>
+    <View>
+      <Text>Habilitar criação</Text>
       <Switch
         value={showEdit}
         onValueChange={setShowEdit}
         color='#648DDB'
       />
-      {!showEdit && (<View style={styles.containerDrop}>
+    </View>
+
+    {showEdit && (
+      <View style={styles.containerDrop}>
+        <Text>Criação de Gráficos/KPIs</Text>
         <Dropdown
           label="Selecionar gráficos/KPIs..."
-          options={OPTIONS}
+          options={CHART_TYPES}
+          mode='outlined'
           disabled={enableUse}
+          value={choosedGraph}
+          onSelect={setChoosedGraph}
         />
-        <TextInput 
+        <TextInput
           label="Título do gráfico..."
-          mode="flat"
+          mode="outlined"
           value={titleName}
           onChangeText={setTitleName}
         />
-        <MultiSelectDropdown
+        <Dropdown
           label="Selecionar sensor..."
-          options={MULTI_SELECT_OPTIONS}
+          mode='outlined'
+          options={availableSensors}
           disabled={enableUse}
-          value={selectedColors}
-          onSelect={setSelectedColors}
+          value={choosedSensors}
+          onSelect={setChoosedSensors}
         />
-        <MultiSelectDropdown
+        <Dropdown 
           label="Selecionar campos..."
-          options={MULTI_SELECT_OPTIONS}
+          mode='outlined'
+          options={availableFields.find(item => item.id === choosedSensors) ? availableFields.find(item => item.id === choosedSensors).fields : []}
           disabled={enableUse}
-          value={selectedColors}
-          onSelect={setSelectedColors}
+          value={choosedFields}
+          onSelect={setChoosedFields}
         />
-      </View>)}
-      <View style={styles.container}>
+        <Button
+          mode="contained"
+          onPress={handleConfirmPlot}
+        >
+          Confirmar
+        </Button>
+      </View>
+    )}
+
+    {confirmedPlots.map((plot) => (
+      <View key={plot.id} style={styles.chartWrapper}>
         <View style={styles.chartContainer}>
-        <Text>Gráfico de Sensor</Text>
+          <View style={styles.titleContainer}> 
+            <Text style={styles.chartTitle}>{plot.title || "Gráfico de Sensor"}</Text>
+            <TouchableOpacity onPress={() => handleDeletePlot(plot.id)} style={styles.deleteIcon}>
+              <Icon name="trash" size={20} color="red" />
+            </TouchableOpacity>
+          </View>
           <LineChart
             data={sensorData}
             scrollToEnd
-            width={Dimensions.get('window').width * 0.68} 
-            height={200}                                 
-            spacing={50}                                  
+            width={Dimensions.get('window').width * 0.68}
+            height={200}
+            spacing={50}
             color="#007BFF"
             dataPointsColor="#007BFF"
             dataPointsRadius={4}
           />
         </View>
-        <Text>{SensorIds}</Text>
       </View>
-    </PaperProvider>
+    ))}
+
+    </ScrollView>
+  </PaperProvider>
   );
 }
 

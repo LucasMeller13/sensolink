@@ -19,8 +19,21 @@ import { useNavigation } from "@react-navigation/native";
 
 export default function UserInfoView() {
   return (
-    <View>
-      <Text>salve user info</Text>
+    <View style={styles.container}>
+      <Text style={styles.texto}>Em manutenção...</Text>
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  texto: {
+    fontSize: 24,
+    fontWeight: "bold",
+    color: "#333",
+  },
+});
